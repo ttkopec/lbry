@@ -39,7 +39,8 @@ setup(
         'treq',
         'docopt',
         'colorama==0.3.7',
-        'six'
+        'six',
+        'keyring'
     ],
     extras_require={
         'test': (

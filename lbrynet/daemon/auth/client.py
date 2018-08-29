@@ -5,14 +5,14 @@ import logging
 from urllib.parse import urlparse
 
 from lbrynet import conf
-from lbrynet.daemon.auth.util import load_api_keys, APIKey, API_KEY_NAME, get_auth_message
+from lbrynet.daemon.auth.util import load_api_keys, APIKey, API_KEY_NAME, get_auth_message, Keyring
 
 log = logging.getLogger(__name__)
 USER_AGENT = "AuthServiceProxy/0.1"
-TWISTED_SESSION = "TWISTED_SESSION"
+TWISTED_SECURE_SESSION = "TWISTED_SECURE_SESSION"
 LBRY_SECRET = "LBRY_SECRET"
 HTTP_TIMEOUT = 30
-SCHEME = "http"
+SCHEME = "https"
 
 
 class JSONRPCException(Exception):
@@ -26,7 +26,6 @@ class UnAuthAPIClient:
         self.host = host
         self.port = port
         self.session = session
-        self.scheme = SCHEME
 
     def __getattr__(self, method):
         async def f(*args, **kwargs):
@@ -39,12 +38,13 @@ class UnAuthAPIClient:
         url_fragment = urlparse(url)
         host = url_fragment.hostname
         port = url_fragment.port
-        session = aiohttp.ClientSession()
+        connector = aiohttp.TCPConnector(ssl=Keyring().get_ssl_context())
+        session = aiohttp.ClientSession(connector=connector)
         return cls(host, port, session)
 
     async def call(self, method, params=None):
         message = {'method': method, 'params': params}
-        async with self.session.get('{}://{}:{}'.format(self.scheme, self.host, self.port), json=message) as resp:
+        async with self.session.get('https://{}:{}'.format(self.host, self.port), json=message) as resp:
             return await resp.json()
 
 
@@ -106,7 +106,7 @@ class AuthAPIClient:
         keys = load_api_keys(pw_path)
         api_key = keys.get(api_key_name, False)
 
-        login_url = "http://{}:{}@{}:{}".format(api_key_name, api_key.secret, conf.settings['api_host'],
+        login_url = "https://{}:{}@{}:{}".format(api_key_name, api_key.secret, conf.settings['api_host'],
                                                 conf.settings['api_port'])
         url = urlparse(login_url)
 
@@ -115,13 +115,12 @@ class AuthAPIClient:
             'User-Agent': USER_AGENT,
             'Content-type': 'application/json'
         }
-
-        session = aiohttp.ClientSession()
+        connector = aiohttp.TCPConnector(ssl=Keyring().get_ssl_context())
+        session = aiohttp.ClientSession(connector=connector)
 
         async with session.post(login_url, headers=headers) as r:
             cookies = r.cookies
-
-        uid = cookies.get(TWISTED_SESSION).value
+        uid = cookies.get(TWISTED_SECURE_SESSION).value
         api_key = APIKey.new(seed=uid.encode())
         return cls(api_key, session, cookies, url, login_url)
 

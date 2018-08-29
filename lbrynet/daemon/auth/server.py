@@ -211,9 +211,14 @@ class AuthJSONRPCServer(AuthorizedBase):
 
         try:
             self.server = self.get_server_factory()
-            self.listening_port = reactor.listenTCP(
-                conf.settings['api_port'], self.server, interface=conf.settings['api_host']
-            )
+            if self.server.use_ssl:
+                self.listening_port = reactor.listenSSL(
+                    conf.settings['api_port'], self.server, self.server.options, interface=conf.settings['api_host']
+                )
+            else:
+                self.listening_port = reactor.listenTCP(
+                    conf.settings['api_port'], self.server, interface=conf.settings['api_host']
+                )
             log.info("lbrynet API listening on TCP %s:%i", conf.settings['api_host'], conf.settings['api_port'])
             yield self.setup()
             self.analytics_manager.send_server_startup_success()
