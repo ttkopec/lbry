@@ -1,6 +1,7 @@
 """
 Download LBRY Files from LBRYnet and save them to disk.
 """
+import os
 import logging
 from binascii import hexlify, unhexlify
 
@@ -59,6 +60,12 @@ class ManagedEncryptedFileDownloader(EncryptedFileSaver):
             self.mirror = HTTPBlobDownloader(
                 self.blob_manager, servers=download_mirrors or conf.settings['download_mirrors']
             )
+
+    @property
+    def st_size(self):
+        if os.path.isfile(self.file_written_to):
+            return os.stat(self.file_written_to).st_size
+        return
 
     def set_claim_info(self, claim_info):
         self.claim_id = claim_info['claim_id']

@@ -63,7 +63,11 @@ class GetStream:
 
     def _check_status(self, status):
         if status.num_completed > 0 and not self.data_downloading_deferred.called:
-            self.data_downloading_deferred.callback(True)
+            output_file_size = self.downloader.st_size
+            if output_file_size is not None and output_file_size:
+                self.data_downloading_deferred.callback(True)
+            else:
+                pass
         if self.data_downloading_deferred.called:
             safe_stop_looping_call(self.checker)
         else:
