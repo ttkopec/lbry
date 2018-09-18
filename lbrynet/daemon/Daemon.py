@@ -1374,6 +1374,23 @@ class Daemon(AuthJSONRPCServer):
         return self.wallet_manager.unlock_wallet(password.encode())
 
     @requires(WALLET_COMPONENT, conditions=[WALLET_IS_UNLOCKED])
+    def jsonrpc_account_lock(self):
+        """
+        Lock an unlocked account
+
+        Usage:
+            account_lock
+
+        Options:
+            None
+
+        Returns:
+            (bool) true if account is locked, otherwise false
+        """
+
+        return self.wallet_manager.lock_wallet()
+
+    @requires(WALLET_COMPONENT, conditions=[WALLET_IS_UNLOCKED])
     def jsonrpc_account_decrypt(self):
         """
         Decrypt an encrypted account, this will remove the wallet password
