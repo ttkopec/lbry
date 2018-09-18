@@ -54,8 +54,7 @@ class LbryWalletManager(BaseWalletManager):
 
     @property
     def use_encryption(self):
-        # TODO: implement this
-        return False
+        return self.default_account.encrypted
 
     @property
     def is_first_run(self):
@@ -63,10 +62,29 @@ class LbryWalletManager(BaseWalletManager):
 
     @property
     def is_wallet_unlocked(self):
-        return True
+        return not self.default_account.locked
 
     def check_locked(self):
-        return defer.succeed(False)
+        return defer.succeed(self.default_account.locked)
+
+    def decrypt_wallet(self):
+        self.default_account.decrypt()
+        self.save()
+        return defer.succeed(not self.default_account.encrypted)
+
+    def encrypt_wallet(self, password):
+        self.default_account.encrypt(password)
+        self.save()
+        return defer.succeed(self.default_account.encrypted)
+
+    def unlock_wallet(self, password):
+        self.default_account.unlock(password)
+        return defer.succeed(not self.default_account.locked)
+
+    def lock_wallet(self):
+        self.default_account.lock()
+        self.save()
+        return defer.succeed(self.default_account.locked)
 
     @staticmethod
     def migrate_lbryum_to_torba(path):

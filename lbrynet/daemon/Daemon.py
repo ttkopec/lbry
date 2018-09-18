@@ -1357,7 +1357,6 @@ class Daemon(AuthJSONRPCServer):
         return result
 
     @requires(WALLET_COMPONENT)
-    @defer.inlineCallbacks
     def jsonrpc_account_unlock(self, password):
         """
         Unlock an encrypted account
@@ -1372,16 +1371,7 @@ class Daemon(AuthJSONRPCServer):
             (bool) true if account is unlocked, otherwise false
         """
 
-        # the check_locked() in the if statement is needed because that is what sets
-        # the wallet_unlocked_d deferred ¯\_(ツ)_/¯
-        if not self.wallet_manager.check_locked():
-            d = self.wallet_manager.wallet_unlocked_d
-            d.callback(password)
-            result = yield d
-        else:
-            result = True
-        response = yield self._render_response(result)
-        defer.returnValue(response)
+        return self.wallet_manager.unlock_wallet(password.encode())
 
     @requires(WALLET_COMPONENT, conditions=[WALLET_IS_UNLOCKED])
     def jsonrpc_account_decrypt(self):
@@ -1414,7 +1404,7 @@ class Daemon(AuthJSONRPCServer):
         Returns:
             (bool) true if wallet is decrypted, otherwise false
         """
-        return self.wallet_manager.encrypt_wallet(new_password)
+        return self.wallet_manager.encrypt_wallet(new_password.encode())
 
     @requires("wallet")
     def jsonrpc_account_max_address_gap(self, account_name):
